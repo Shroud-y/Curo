@@ -15,3 +15,24 @@ export interface SpriteImage {
   width: number
   height: number
 }
+
+/**
+ * Result of resolving a mod root's sprite directories. `groups` holds the
+ * top-level groups found ("sprites", and optionally "sprites-override"); it is
+ * null when the root contains no recognizable sprites folder at all.
+ */
+export interface SpriteTreeResult {
+  groups: SpriteNode[]
+}
+
+/** App settings exposed to the renderer. */
+export interface Settings {
+  lastModRoot?: string
+  editorPath?: string
+}
+
+/** Payload pushed to the renderer when a watched .png is added/changed/removed. */
+export interface SpritesChangedEvent {
+  event: 'add' | 'change' | 'unlink'
+  path: string
+}

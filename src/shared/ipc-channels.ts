@@ -9,5 +9,14 @@
 export enum IpcChannel {
   PickModFolder = 'sprites:pick-mod-folder',
   ReadSpriteTree = 'sprites:read-tree',
-  ReadSprite = 'sprites:read-sprite'
+  ReadSprite = 'sprites:read-sprite',
+  GetLastRoot = 'sprites:get-last-root',
+  // Settings
+  SettingsGet = 'settings:get',
+  SettingsChooseEditor = 'settings:choose-editor',
+  // Sprite actions
+  OpenInEditor = 'sprites:open-in-editor',
+  ReplaceSprite = 'sprites:replace',
+  // Main -> renderer push when a watched sprite file changes
+  SpritesChanged = 'sprites:changed'
 }

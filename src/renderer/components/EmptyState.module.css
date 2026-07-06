@@ -21,6 +21,12 @@
   color: var(--text-dim);
 }
 
+.error {
+  margin: 0 0 18px;
+  color: #f2777a;
+  font-size: 12px;
+}
+
 .pickBtn {
   padding: 10px 22px;
   border: none;

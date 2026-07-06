@@ -32,3 +32,24 @@
   margin: 0 0 10px;
   font-variant-numeric: tabular-nums;
 }
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.action {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+}
+
+.action:hover {
+  border-color: var(--accent);
+}

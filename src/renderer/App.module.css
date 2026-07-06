@@ -1,7 +1,17 @@
 .app {
   display: grid;
-  grid-template-columns: 280px 1fr 240px;
-  height: 100%;
+  grid-template-columns: 280px 1fr 260px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Every column is its own independent scroll container. min-height:0 lets a
+   grid item shrink below its content so overflow can actually scroll. */
+.left,
+.center,
+.right {
+  min-height: 0;
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -19,6 +29,7 @@
   gap: 8px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .rootLabel {
@@ -33,7 +44,7 @@
   font-size: 11px;
 }
 
-.changeBtn {
+.headerBtn {
   flex-shrink: 0;
   padding: 3px 9px;
   border: 1px solid var(--border);
@@ -43,29 +54,59 @@
   font-size: 11px;
 }
 
-.changeBtn:hover {
+.headerBtn:hover {
   border-color: var(--accent);
+}
+
+.pickError {
+  margin: 0;
+  padding: 8px 10px;
+  color: #f2777a;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .treeScroll {
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 6px 4px;
+  /* Firefox thin fallback. */
+  scrollbar-width: thin;
+  scrollbar-color: #3a3f4d transparent;
 }
 
-.treeError {
-  padding: 10px;
-  color: var(--text-dim);
-  font-size: 12px;
+/* WebKit: thin, subtle track, rounded muted thumb that lightens on hover. */
+.treeScroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.treeScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.treeScroll::-webkit-scrollbar-thumb {
+  background: #3a3f4d;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.treeScroll::-webkit-scrollbar-thumb:hover {
+  background: #4d5464;
+  background-clip: padding-box;
 }
 
 .center {
   min-width: 0;
-  overflow: hidden;
 }
 
 .right {
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
   border-left: 1px solid var(--border);
-  overflow: auto;
+  overflow-y: auto;
 }
