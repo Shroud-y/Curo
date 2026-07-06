@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IpcChannel } from '@shared/ipc-channels'
 import type { Settings, SpriteImage, SpritesChangedEvent, SpriteTreeResult } from '@shared/types'
+import type { ParseResult } from '@shared/content'
 
 function subscribe<T>(channel: IpcChannel, cb: (payload: T) => void): () => void {
   const listener = (_e: IpcRendererEvent, payload: T): void => cb(payload)
@@ -33,7 +34,14 @@ const api = {
 
   /** Subscribe to watcher events (.png add/change/unlink). Returns unsubscribe. */
   onSpritesChanged: (cb: (e: SpritesChangedEvent) => void): (() => void) =>
-    subscribe(IpcChannel.SpritesChanged, cb)
+    subscribe(IpcChannel.SpritesChanged, cb),
+
+  /** Parse mod content. `dir` overrides auto-detect of src/**\/content/*.java. */
+  parseContent: (modRoot: string, dir?: string): Promise<ParseResult> =>
+    ipcRenderer.invoke(IpcChannel.ParseContent, modRoot, dir),
+  /** Pick a content folder directly; null if cancelled. */
+  chooseContentFolder: (): Promise<string | null> =>
+    ipcRenderer.invoke(IpcChannel.ChooseContentFolder)
 }
 
 export type Api = typeof api

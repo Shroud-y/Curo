@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import icon from '../../resources/icon.png?asset'
 import { registerSpriteIpc } from './ipc/sprites'
+import { registerContentIpc } from './ipc/content'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -38,6 +39,7 @@ app.whenReady().then(() => {
   if (process.platform === 'win32') app.setAppUserModelId('com.curo.app')
 
   registerSpriteIpc()
+  registerContentIpc()
   createWindow()
 
   app.on('activate', () => {

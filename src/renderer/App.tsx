@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Settings, SpriteImage, SpriteNode } from '@shared/types'
+import type { ParseResult } from '@shared/content'
 import { SpriteTree } from './components/SpriteTree'
 import { PreviewPane } from './components/PreviewPane'
 import { InfoPane } from './components/InfoPane'
 import { EmptyState } from './components/EmptyState'
 import { SettingsPanel } from './components/SettingsPanel'
+import { DebugPanel } from './components/DebugPanel'
 import styles from './App.module.css'
 
 const NO_SPRITES_MSG = 'No sprites folder found — is this a Mindustry mod root?'
@@ -18,6 +20,7 @@ export default function App(): JSX.Element {
   const [settings, setSettings] = useState<Settings>({})
   const [showSettings, setShowSettings] = useState(false)
   const [reloadNonce, setReloadNonce] = useState(0)
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null)
 
   // Load a mod root's sprite groups. On success commits the root + groups;
   // on failure surfaces an error and leaves the current root untouched.
@@ -108,6 +111,11 @@ export default function App(): JSX.Element {
     setSettings(await window.api.chooseEditor())
   }, [])
 
+  const parseContent = useCallback(async () => {
+    if (!modRoot) return
+    setParseResult(await window.api.parseContent(modRoot))
+  }, [modRoot])
+
   if (!modRoot) {
     return <EmptyState onPick={pickFolder} error={pickError} />
   }
@@ -119,6 +127,9 @@ export default function App(): JSX.Element {
           <span className={styles.rootLabel} title={modRoot}>
             {modRoot}
           </span>
+          <button className={styles.headerBtn} onClick={parseContent}>
+            Parse content
+          </button>
           <button className={styles.headerBtn} onClick={() => setShowSettings(true)}>
             ⚙
           </button>
@@ -157,6 +168,14 @@ export default function App(): JSX.Element {
           editorPath={settings.editorPath}
           onChooseEditor={chooseEditor}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {parseResult && (
+        <DebugPanel
+          result={parseResult}
+          groups={groups}
+          onClose={() => setParseResult(null)}
         />
       )}
     </div>

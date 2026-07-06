@@ -18,5 +18,8 @@ export enum IpcChannel {
   OpenInEditor = 'sprites:open-in-editor',
   ReplaceSprite = 'sprites:replace',
   // Main -> renderer push when a watched sprite file changes
-  SpritesChanged = 'sprites:changed'
+  SpritesChanged = 'sprites:changed',
+  // Content parser
+  ParseContent = 'content:parse',
+  ChooseContentFolder = 'content:choose-folder'
 }
