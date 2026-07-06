@@ -168,7 +168,9 @@ function parseWeapons(chain: string): WeaponDef[] {
       pos: pos ? { x: parseFloat(pos[1]), y: parseFloat(pos[2]) } : { x: 0, y: 0 },
       mirror: boolFlag(seg, 'mirror', false),
       rotate: boolFlag(seg, 'rotate', false),
-      top: boolFlag(seg, 'top', false)
+      // Mindustry's Weapon.top defaults to true (weapon drawn OVER the body);
+      // only an explicit .top(false) puts it under.
+      top: boolFlag(seg, 'top', true)
     }
   })
 }

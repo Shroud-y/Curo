@@ -2,7 +2,7 @@ import type { SpriteNode } from '@shared/types'
 import type { UnitEntity } from '@shared/content'
 
 /** A flattened sprite leaf with a forward-slash-normalized path. */
-interface Leaf {
+export interface Leaf {
   /** basename without extension, e.g. "decimator-cannon". */
   stem: string
   /** normalized absolute path. */
@@ -27,6 +27,28 @@ export interface UnitResolution {
   /** true when the unit's folder wasn't found and we fell back to the whole tree. */
   usedFallback: boolean
   weapons: WeaponResolution[]
+}
+
+/** Leaves inside a unit's own folder `.../units/<id>/` (may be empty). */
+function unitFolder(leaves: Leaf[], unitId: string): Leaf[] {
+  const tag = `/units/${unitId}/`.toLowerCase()
+  return leaves.filter((l) => l.path.toLowerCase().includes(tag))
+}
+
+/** The base body sprite `units/<id>/<id>.png`. */
+export function resolveBase(leaves: Leaf[], unitId: string): string | null {
+  const folder = unitFolder(leaves, unitId)
+  return folder.find((l) => l.stem === unitId)?.path ?? null
+}
+
+/** The team-cell sprite `units/<id>/<id>-cell.png` (or any `*-cell` in folder). */
+export function resolveCell(leaves: Leaf[], unitId: string): string | null {
+  const folder = unitFolder(leaves, unitId)
+  return (
+    folder.find((l) => l.stem === `${unitId}-cell`)?.path ??
+    folder.find((l) => l.stem.endsWith('-cell'))?.path ??
+    null
+  )
 }
 
 /** Collect all sprite leaves under a group tree, paths normalized to `/`. */
