@@ -1,34 +1,22 @@
 # Curo
 
 Lightweight Electron + Vite + React + TypeScript desktop app for managing and
-previewing Mindustry mod sprites.
-
-This step: pick a mod folder, browse its `sprites/` tree, and preview PNGs
-crisp (nearest-neighbor) with a checkerboard background and zoom. Compositing,
-weapons, editor-spawn, and content parsing come later.
+previewing Mindustry mod sprites. I made this in order to make my mod developing easier, so it's most likely some functions won't work with you architecture, but base functional will work properly. 
 
 ## Run
 
 ```bash
-npm install
-npm run dev        # launch in dev (hot reload)
+pnpm install
+pnpm run dev        # launch in dev (hot reload)
 ```
 
 Other scripts:
 
 ```bash
-npm run typecheck  # tsc, strict, both configs
-npm run build      # bundle main + preload + renderer into out/
-npm run preview    # run the production build
+pnpm run typecheck  # tsc, strict, both configs
+pnpm run build      # bundle main + preload + renderer into out/
+pnpm run preview    # run the production build
 ```
-
-## Usage
-
-1. Launch → **Pick mod folder** → choose a Mindustry mod root (the folder that
-   contains a `sprites/` subfolder).
-2. Left column: collapsible folder/sprite tree. Click a sprite to select it.
-3. Center: preview pane with checkerboard, `100/200/400/800%` zoom, no smoothing.
-4. Right: info pane showing the selected sprite's `W × H` in pixels.
 
 ## Layout
 
