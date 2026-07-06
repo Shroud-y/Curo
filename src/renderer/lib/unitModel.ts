@@ -33,7 +33,9 @@ export interface ComponentSel {
 export const TEAMS: Record<string, string> = {
   Sharded: '#ffd37f',
   Crux: '#f25555',
-  Malis: '#a154d6'
+  Malis: '#a95eff',
+  Green: '#4dff77',
+  Blue: '#64a5ff'
 }
 
 /** Build render-ready views for every unit, resolving base/cell/weapon sprites. */

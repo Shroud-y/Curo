@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentSel, UnitView } from '../lib/unitModel'
 import { TEAMS } from '../lib/unitModel'
 import { layoutComposite, type Dims, type LayerFlags } from '../lib/composite'
+import { tintCell } from '../lib/cellTint'
 import { PixelViewport } from './PixelViewport'
 import styles from './CompositeView.module.css'
 
@@ -53,22 +54,6 @@ function useSprites(files: string[], version: number): { imgs: Map<string, Loade
   }, [key, version])
 
   return { imgs }
-}
-
-/** Multiply-tint a sprite into an offscreen canvas (keeps nearest-neighbor). */
-function tinted(img: HTMLImageElement, w: number, h: number, color: string): HTMLCanvasElement {
-  const off = document.createElement('canvas')
-  off.width = w
-  off.height = h
-  const c = off.getContext('2d')!
-  c.imageSmoothingEnabled = false
-  c.drawImage(img, 0, 0, w, h)
-  c.globalCompositeOperation = 'multiply'
-  c.fillStyle = color
-  c.fillRect(0, 0, w, h)
-  c.globalCompositeOperation = 'destination-in' // restore original alpha
-  c.drawImage(img, 0, 0, w, h)
-  return off
 }
 
 export function CompositeView({ view, component, reloadVersion }: Props): JSX.Element {
@@ -156,7 +141,7 @@ export function CompositeView({ view, component, reloadVersion }: Props): JSX.El
       ctx.translate(p.cx, p.cy)
       if (p.flipX) ctx.scale(-1, 1)
       if (p.tint) {
-        ctx.drawImage(tinted(loaded.img, p.width, p.height, p.tint), -p.width / 2, -p.height / 2)
+        ctx.drawImage(tintCell(loaded.img, p.width, p.height, p.tint), -p.width / 2, -p.height / 2)
       } else {
         ctx.drawImage(loaded.img, -p.width / 2, -p.height / 2, p.width, p.height)
       }

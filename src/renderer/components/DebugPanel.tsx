@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { SpriteNode } from '@shared/types'
 import type { DefEntity, DefKind, ParseResult, RegionPartRef, UnitEntity } from '@shared/content'
-import { flattenLeaves, resolveUnit, type UnitResolution } from '../lib/resolveSprites'
+import { flattenLeaves, resolveCell, resolveUnit, type UnitResolution } from '../lib/resolveSprites'
 import styles from './DebugPanel.module.css'
 
 interface Props {
@@ -39,6 +39,9 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
   )
   const unresolved = weaponsWithRegion - resolvedCount
 
+  // Units with a real -cell sprite (tint-capable) vs baked-in cell.
+  const tintCapable = units.filter((u) => u.hasCell && resolveCell(leaves, u.id) !== null)
+
   const [copied, setCopied] = useState(false)
   const copy = (): void => {
     void navigator.clipboard
@@ -72,6 +75,11 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
             {resolvedCount}/{weaponsWithRegion} resolved
           </span>{' '}
           · {result.files.length} files
+        </p>
+
+        <p className={styles.counts}>
+          <b>tint-capable</b> ({tintCapable.length}/{units.length} have a -cell sprite):{' '}
+          {tintCapable.length ? tintCapable.map((u) => u.id).join(', ') : '(none — all baked-in)'}
         </p>
 
         <div className={styles.scroll}>
