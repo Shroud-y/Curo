@@ -36,3 +36,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.count {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0 6px;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}

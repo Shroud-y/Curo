@@ -10,12 +10,20 @@ interface Props {
   depth?: number
 }
 
+/** Count .png descendants under a node (for the folder badge). */
+function countPng(node: SpriteNode): number {
+  if (node.type === 'sprite') return 1
+  return node.children?.reduce((n, c) => n + countPng(c), 0) ?? 0
+}
+
 /**
- * Renders one tree node. Folders are collapsible (root open by default);
- * sprites are selectable rows. Recurses for folder children.
+ * Renders one tree node. Folders are collapsible; the sprites root AND its
+ * top-level folders (depth ≤ 1) are open by default so every category
+ * (blocks/factory/items/liquids/units) is visible without hunting. Sprites are
+ * selectable rows. Recurses for folder children.
  */
 export function SpriteTree({ node, selectedPath, onSelect, depth = 0 }: Props): JSX.Element {
-  const [open, setOpen] = useState(depth === 0)
+  const [open, setOpen] = useState(depth <= 1)
   const indent = { paddingLeft: `${6 + depth * 14}px` }
 
   if (node.type === 'folder') {
@@ -30,6 +38,7 @@ export function SpriteTree({ node, selectedPath, onSelect, depth = 0 }: Props): 
           <span className={styles.chevron}>{open ? '▾' : '▸'}</span>
           <span className={styles.folderIcon}>📁</span>
           <span className={styles.label}>{node.name}</span>
+          <span className={styles.count}>{countPng(node)}</span>
         </div>
         {open &&
           node.children?.map((child) => (

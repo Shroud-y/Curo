@@ -17,9 +17,17 @@ export function BlockTree({
   onSelectBlock,
   onSelectComponent
 }: Props): JSX.Element {
+  // Sort by type: turrets first, then grouped by className, then by id.
+  const sorted = [...blocks].sort((a, b) => {
+    if (a.isTurret !== b.isTurret) return a.isTurret ? -1 : 1
+    if (a.block.className !== b.block.className)
+      return a.block.className.localeCompare(b.block.className)
+    return a.block.id.localeCompare(b.block.id)
+  })
+
   return (
     <div>
-      {blocks.map((v) => (
+      {sorted.map((v) => (
         <BlockNode
           key={v.block.file + v.block.name}
           view={v}

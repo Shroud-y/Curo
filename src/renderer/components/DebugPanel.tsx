@@ -59,11 +59,32 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
     return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [leaves])
 
+  // Stats walked from the EXACT `groups` object the Sprites tree renders — proves
+  // the tree, the header, and the resolver all read one recursive index.
+  const treeStats = useMemo(() => {
+    let png = 0
+    let nodes = 0
+    const walk = (n: SpriteNode): void => {
+      nodes++
+      if (n.type === 'sprite') png++
+      n.children?.forEach(walk)
+    }
+    groups.forEach(walk)
+    const topFolders = groups
+      .flatMap((g) => g.children ?? [])
+      .filter((c) => c.type === 'folder')
+      .map((c) => c.name)
+    // Also log to console for the record.
+    // eslint-disable-next-line no-console
+    console.log('[tree] top folders:', topFolders, '· png descendants:', png, '· nodes:', nodes)
+    return { png, nodes, topFolders }
+  }, [groups])
+
   const [copied, setCopied] = useState(false)
   const copy = (): void => {
     void navigator.clipboard
       .writeText(
-        buildDump(result, resolved, blocks, items, liquids, other, resolvedCount, weaponsWithRegion, turrets, turretBaseCount)
+        buildDump(result, resolved, blocks, items, liquids, other, resolvedCount, weaponsWithRegion, turrets, turretBaseCount, treeStats, folderCounts)
       )
       .then(() => {
         setCopied(true)
@@ -93,7 +114,7 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
           <span className={unresolved ? styles.bad : styles.ok}>
             {resolvedCount}/{weaponsWithRegion} resolved
           </span>{' '}
-          · {result.files.length} files
+          · {result.files.length} content files (.java)
         </p>
 
         <p className={styles.counts}>
@@ -102,8 +123,17 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
         </p>
 
         <p className={styles.counts}>
-          <b>sprite index</b>: {leaves.length} png · per folder:{' '}
-          {folderCounts.map(([d, n]) => `${d}=${n}`).join(', ')}
+          <b>tree root</b>: {treeStats.topFolders.length} top folders [
+          {treeStats.topFolders.join(', ')}] · {treeStats.png} png descendants ·{' '}
+          {treeStats.nodes} nodes
+        </p>
+
+        <p className={styles.counts}>
+          <b>sprite index</b> (from tree root): {leaves.length} png · per folder:{' '}
+          {folderCounts.map(([d, n]) => `${d}=${n}`).join(', ')}{' '}
+          <span className={leaves.length === treeStats.png ? styles.ok : styles.bad}>
+            {leaves.length === treeStats.png ? '(agrees ✓)' : '(MISMATCH — two scan paths!)'}
+          </span>
         </p>
 
         <p className={styles.counts}>
@@ -229,14 +259,24 @@ function buildDump(
   resolvedCount: number,
   weaponsWithRegion: number,
   turrets: BlockView[],
-  turretBaseCount: number
+  turretBaseCount: number,
+  treeStats: { png: number; nodes: number; topFolders: string[] },
+  folderCounts: Array<[string, number]>
 ): string {
   const lines: string[] = []
   lines.push(
     `prefix ${result.modPrefix || '(none)'} · ${resolved.length} units · ` +
       `${blocks.length} blocks · ${items.length} items · ${liquids.length} liquids · ` +
       `${other.length} other · ${resolvedCount}/${weaponsWithRegion} regions resolved · ` +
-      `${result.files.length} files`
+      `${result.files.length} content files (.java)`
+  )
+
+  lines.push(
+    '',
+    '# Sprite index (from the exact groups object the tree renders)',
+    `tree root: ${treeStats.topFolders.length} top folders [${treeStats.topFolders.join(', ')}]`,
+    `png descendants: ${treeStats.png} · nodes: ${treeStats.nodes}`,
+    `per folder: ${folderCounts.map(([d, n]) => `${d}=${n}`).join(', ')}`
   )
 
   lines.push('', `# Turret foundations (turretBase index: ${turretBaseCount} png)`)
