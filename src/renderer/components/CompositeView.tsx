@@ -14,9 +14,11 @@ interface Props {
   component: ComponentSel | null
   /** Bumps on any watched-sprite change → forces a reload (busts stale images). */
   reloadVersion: number
+  /** App-level category tabs, pinned left of the toolbar. */
+  leading?: React.ReactNode
 }
 
-export function CompositeView({ view, component, reloadVersion }: Props): JSX.Element {
+export function CompositeView({ view, component, reloadVersion, leading }: Props): JSX.Element {
   const [mode, setMode] = useState<'ingame' | 'component'>('ingame')
   const [scale, setScale] = useState(4)
   const [teamKey, setTeamKey] = useState<string>('Sharded')
@@ -208,7 +210,7 @@ export function CompositeView({ view, component, reloadVersion }: Props): JSX.El
 
   return (
     <div className={styles.wrap}>
-      <PixelViewport width={canvasW} height={canvasH} fitKey={fitKey} toolbar={toolbar}>
+      <PixelViewport width={canvasW} height={canvasH} fitKey={fitKey} toolbar={toolbar} leading={leading}>
         <canvas ref={canvasRef} className={styles.canvas} width={canvasW} height={canvasH} />
       </PixelViewport>
 

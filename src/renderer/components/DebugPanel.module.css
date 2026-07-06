@@ -77,6 +77,10 @@
   color: #f2777a;
 }
 
+.warn {
+  color: #ff9628;
+}
+
 .scroll {
   flex: 1;
   min-height: 0;

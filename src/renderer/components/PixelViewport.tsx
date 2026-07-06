@@ -9,6 +9,8 @@ interface Props {
   fitKey: string | null
   /** Extra controls rendered in the toolbar, right of Fit / zoom%. */
   toolbar?: React.ReactNode
+  /** App-level controls pinned to the far LEFT of the toolbar (category tabs). */
+  leading?: React.ReactNode
   /** The pixel content: an <img> or <canvas> sized to width/height at 0,0. */
   children: React.ReactNode
 }
@@ -30,7 +32,7 @@ const clampScale = (s: number): number => Math.min(MAX_SCALE, Math.max(MIN_SCALE
  * a GPU-composited stage moved by a single translate()+scale() transform.
  * `mode:'fit'` recomputes on resize; any gesture switches to 'free'.
  */
-export function PixelViewport({ width, height, fitKey, toolbar, children }: Props): JSX.Element {
+export function PixelViewport({ width, height, fitKey, toolbar, leading, children }: Props): JSX.Element {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [pane, setPane] = useState({ w: 0, h: 0 })
   const [mode, setMode] = useState<'fit' | 'free'>('fit')
@@ -140,25 +142,28 @@ export function PixelViewport({ width, height, fitKey, toolbar, children }: Prop
   return (
     <div className={styles.pane}>
       <div className={styles.toolbar}>
-        <button className={styles.fitBtn} onClick={() => setMode('fit')}>
-          Fit
-        </button>
-        <div className={styles.zoomField}>
-          <input
-            className={styles.zoomInput}
-            value={zoomInput}
-            onFocus={() => setEditing(true)}
-            onChange={(e) => setZoomInput(e.target.value.replace(/[^0-9.]/g, ''))}
-            onBlur={commitZoomInput}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.currentTarget.blur()
-            }}
-            inputMode="numeric"
-            aria-label="Zoom percentage"
-          />
-          <span className={styles.percent}>%</span>
+        {leading && <div className={styles.leading}>{leading}</div>}
+        <div className={styles.controls}>
+          <button className={styles.fitBtn} onClick={() => setMode('fit')}>
+            Fit
+          </button>
+          <div className={styles.zoomField}>
+            <input
+              className={styles.zoomInput}
+              value={zoomInput}
+              onFocus={() => setEditing(true)}
+              onChange={(e) => setZoomInput(e.target.value.replace(/[^0-9.]/g, ''))}
+              onBlur={commitZoomInput}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+              }}
+              inputMode="numeric"
+              aria-label="Zoom percentage"
+            />
+            <span className={styles.percent}>%</span>
+          </div>
+          {toolbar && <div className={styles.toolbarExtra}>{toolbar}</div>}
         </div>
-        {toolbar && <div className={styles.toolbarExtra}>{toolbar}</div>}
       </div>
 
       <div

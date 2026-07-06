@@ -49,14 +49,15 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
   const noBase = blockViews.filter((b) => b.main === null)
   // Confirm the turretBase folder is actually indexed.
   const turretBaseCount = leaves.filter((l) => l.path.toLowerCase().includes('/turretbase/')).length
-  // Full-tree index sanity: total png + the top-level sprite dirs discovered.
-  const topDirs = [
-    ...new Set(
-      leaves
-        .map((l) => /\/sprites\/([^/]+)\//.exec(l.path)?.[1])
-        .filter((d): d is string => Boolean(d))
-    )
-  ].sort()
+  // Full-tree index sanity: per top-level sprite folder png counts.
+  const folderCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const l of leaves) {
+      const dir = /\/sprites\/([^/]+)\//.exec(l.path)?.[1] ?? '(root)'
+      counts.set(dir, (counts.get(dir) ?? 0) + 1)
+    }
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [leaves])
 
   const [copied, setCopied] = useState(false)
   const copy = (): void => {
@@ -101,8 +102,8 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
         </p>
 
         <p className={styles.counts}>
-          <b>sprite index</b>: {leaves.length} png · top-level dirs:{' '}
-          {topDirs.length ? topDirs.join(', ') : '(none)'}
+          <b>sprite index</b>: {leaves.length} png · per folder:{' '}
+          {folderCounts.map(([d, n]) => `${d}=${n}`).join(', ')}
         </p>
 
         <p className={styles.counts}>
@@ -121,10 +122,11 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
                 <b>{b.block.id}</b> <span className={styles.dim}>size={b.size}</span>
                 {' foundation → '}
                 {b.foundation ? (
-                  <span className={styles.file}>turretBase/{b.foundationLabel}.png</span>
+                  <span className={styles.file}>REAL turretBase/{b.foundationLabel}.png</span>
                 ) : (
-                  <span className={styles.bad}>
-                    NONE (looked for {b.block.id}-base.png / block-{b.size}.png)
+                  <span className={styles.warn}>
+                    GHOST ({b.size * 32}×{b.size * 32}), no plate found (looked for {b.block.id}
+                    -base.png / block-{b.size}.png)
                   </span>
                 )}
               </div>
@@ -240,8 +242,8 @@ function buildDump(
   lines.push('', `# Turret foundations (turretBase index: ${turretBaseCount} png)`)
   for (const b of turrets) {
     const found = b.foundation
-      ? `turretBase/${b.foundationLabel}.png`
-      : `NONE (looked for ${b.block.id}-base.png / block-${b.size}.png)`
+      ? `REAL turretBase/${b.foundationLabel}.png`
+      : `GHOST (${b.size * 32}x${b.size * 32}), no plate found (looked for ${b.block.id}-base.png / block-${b.size}.png)`
     lines.push(`${b.block.id} size=${b.size} foundation -> ${found}`)
   }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BlockComponentSel, BlockView } from '../lib/blockModel'
 import { layoutBlock } from '../lib/blockComposite'
 import type { Dims } from '../lib/composite'
-import { drawMissingMarker } from '../lib/marker'
+import { drawGhostFoundation, drawMissingMarker } from '../lib/marker'
 import { PixelViewport } from './PixelViewport'
 import { useSprites } from './useSprites'
 import styles from './CompositeView.module.css'
@@ -11,11 +11,14 @@ interface Props {
   view: BlockView
   component: BlockComponentSel | null
   reloadVersion: number
+  /** App-level category tabs, pinned left of the toolbar. */
+  leading?: React.ReactNode
 }
 
-export function BlockCompositeView({ view, component, reloadVersion }: Props): JSX.Element {
+export function BlockCompositeView({ view, component, reloadVersion, leading }: Props): JSX.Element {
   const [mode, setMode] = useState<'ingame' | 'component'>('ingame')
   const [showMissing, setShowMissing] = useState(true)
+  const [showGhost, setShowGhost] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -37,7 +40,10 @@ export function BlockCompositeView({ view, component, reloadVersion }: Props): J
     return m
   }, [imgs])
 
-  const layout = useMemo(() => layoutBlock(view, dims, showMissing), [view, dims, showMissing])
+  const layout = useMemo(
+    () => layoutBlock(view, dims, showMissing, showGhost),
+    [view, dims, showMissing, showGhost]
+  )
 
   const compFile = component?.file ?? view.main
   const compDim = compFile ? dims.get(compFile) : undefined
@@ -58,6 +64,10 @@ export function BlockCompositeView({ view, component, reloadVersion }: Props): J
       return
     }
     for (const p of layout.placements) {
+      if (p.ghost) {
+        drawGhostFoundation(ctx, p.cx, p.cy, p.width)
+        continue
+      }
       if (p.marker) {
         drawMissingMarker(ctx, p.cx, p.cy, p.width)
         continue
@@ -79,10 +89,18 @@ export function BlockCompositeView({ view, component, reloadVersion }: Props): J
         </button>
       </div>
       {mode === 'ingame' && (
-        <label className={styles.check} title="Show a marker where a region sprite is missing">
-          <input type="checkbox" checked={showMissing} onChange={(e) => setShowMissing(e.target.checked)} />
-          missing
-        </label>
+        <>
+          <label className={styles.check} title="Show a marker where a region sprite is missing">
+            <input type="checkbox" checked={showMissing} onChange={(e) => setShowMissing(e.target.checked)} />
+            missing
+          </label>
+          {view.isTurret && (
+            <label className={styles.check} title="Draw a ghost footprint when no real turret base plate is found">
+              <input type="checkbox" checked={showGhost} onChange={(e) => setShowGhost(e.target.checked)} />
+              ghost base
+            </label>
+          )}
+        </>
       )}
     </>
   )
@@ -93,7 +111,7 @@ export function BlockCompositeView({ view, component, reloadVersion }: Props): J
 
   return (
     <div className={styles.wrap}>
-      <PixelViewport width={canvasW} height={canvasH} fitKey={fitKey} toolbar={toolbar}>
+      <PixelViewport width={canvasW} height={canvasH} fitKey={fitKey} toolbar={toolbar} leading={leading}>
         <canvas ref={canvasRef} className={styles.canvas} width={canvasW} height={canvasH} />
       </PixelViewport>
 

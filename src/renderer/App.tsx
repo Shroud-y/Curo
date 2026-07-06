@@ -184,6 +184,34 @@ export default function App(): JSX.Element {
     return <EmptyState onPick={pickFolder} error={pickError} />
   }
 
+  // App-level category nav, rendered at the left of the preview toolbar.
+  const categoryTabs = (
+    <div className={styles.catTabs}>
+      <button
+        className={leftTab === 'sprites' ? styles.catTabActive : styles.catTab}
+        onClick={() => setLeftTab('sprites')}
+      >
+        Sprites
+      </button>
+      <button
+        className={leftTab === 'units' ? styles.catTabActive : styles.catTab}
+        onClick={() => setLeftTab('units')}
+        disabled={!parseResult}
+        title={parseResult ? '' : 'Parse content first'}
+      >
+        Units{parseResult ? ` (${unitViews.length})` : ''}
+      </button>
+      <button
+        className={leftTab === 'blocks' ? styles.catTabActive : styles.catTab}
+        onClick={() => setLeftTab('blocks')}
+        disabled={!parseResult}
+        title={parseResult ? '' : 'Parse content first'}
+      >
+        Blocks{parseResult ? ` (${blockViews.length})` : ''}
+      </button>
+    </div>
+  )
+
   return (
     <div className={styles.app}>
       <aside className={styles.left}>
@@ -201,31 +229,6 @@ export default function App(): JSX.Element {
           </button>
           <button className={styles.headerBtn} onClick={pickFolder}>
             Change
-          </button>
-        </div>
-
-        <div className={styles.tabs}>
-          <button
-            className={leftTab === 'sprites' ? styles.tabActive : styles.tab}
-            onClick={() => setLeftTab('sprites')}
-          >
-            Sprites
-          </button>
-          <button
-            className={leftTab === 'units' ? styles.tabActive : styles.tab}
-            onClick={() => setLeftTab('units')}
-            disabled={!parseResult}
-            title={parseResult ? '' : 'Parse content first'}
-          >
-            Units{parseResult ? ` (${unitViews.length})` : ''}
-          </button>
-          <button
-            className={leftTab === 'blocks' ? styles.tabActive : styles.tab}
-            onClick={() => setLeftTab('blocks')}
-            disabled={!parseResult}
-            title={parseResult ? '' : 'Parse content first'}
-          >
-            Blocks{parseResult ? ` (${blockViews.length})` : ''}
           </button>
         </div>
 
@@ -279,15 +282,17 @@ export default function App(): JSX.Element {
             view={activeUnit}
             component={unitSel?.component ?? null}
             reloadVersion={spritesVersion}
+            leading={categoryTabs}
           />
         ) : leftTab === 'blocks' && activeBlock ? (
           <BlockCompositeView
             view={activeBlock}
             component={blockSel?.component ?? null}
             reloadVersion={spritesVersion}
+            leading={categoryTabs}
           />
         ) : (
-          <PreviewPane image={image} fitKey={activePath} />
+          <PreviewPane image={image} fitKey={activePath} leading={categoryTabs} />
         )}
       </main>
 

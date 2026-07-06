@@ -11,10 +11,14 @@ export interface BlockPlacement {
   height: number
   /** a missing-sprite placeholder marker (no image drawn). */
   marker?: boolean
+  /** a ghost turret-foundation footprint (no image drawn). */
+  ghost?: boolean
   label: string
 }
 
 const MARKER = 14
+/** Turret footprint px per size unit (matches Mindustry's 32px tiles). */
+const TILE_PX = 32
 
 export interface BlockLayout {
   canvasWidth: number
@@ -35,11 +39,30 @@ const dimOf = (dims: Dims, file: string | null): { width: number; height: number
  * (blocks have no per-part offset), so the canvas is just the largest present
  * sprite. Layer order bottom→top: foundation → main → parts (declared order).
  */
-export function layoutBlock(view: BlockView, dims: Dims, showMissing: boolean): BlockLayout {
-  const items: Array<{ layer: BlockPlacement['layer']; file: string; w: number; h: number; marker?: boolean; label: string }> = []
+export function layoutBlock(
+  view: BlockView,
+  dims: Dims,
+  showMissing: boolean,
+  showGhost: boolean
+): BlockLayout {
+  const items: Array<{
+    layer: BlockPlacement['layer']
+    file: string
+    w: number
+    h: number
+    marker?: boolean
+    ghost?: boolean
+    label: string
+  }> = []
   const notShown: string[] = []
 
   const foundationDim = dimOf(dims, view.foundation)
+  // Ghost foundation (bottom layer): only for turrets with no real plate resolved.
+  const useGhost = view.isTurret && !view.foundation && showGhost
+  if (useGhost) {
+    const side = view.size * TILE_PX
+    items.push({ layer: 'foundation', file: '', w: side, h: side, ghost: true, label: 'ghost base' })
+  }
   if (view.foundation && foundationDim) {
     items.push({ layer: 'foundation', file: view.foundation, w: foundationDim.width, h: foundationDim.height, label: view.foundationLabel })
   }
@@ -78,6 +101,8 @@ export function layoutBlock(view: BlockView, dims: Dims, showMissing: boolean): 
     cy: center.y,
     width: it.w,
     height: it.h,
+    marker: it.marker,
+    ghost: it.ghost,
     label: it.label
   }))
 

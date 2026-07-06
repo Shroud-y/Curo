@@ -16,11 +16,25 @@
   flex-wrap: wrap;
 }
 
-.toolbarExtra {
+.leading {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Fit / zoom% / view controls, pushed to the right of the leading tabs. */
+.controls {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.toolbarExtra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
