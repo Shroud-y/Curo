@@ -207,12 +207,17 @@ export function parseContentFile(text: string, file: string): ContentEntity[] {
     if (b[3] === '') continue
     const chain = scopeStatement(src, b.index)
     openUntil = b.index + chain.length
+    // `size = N` (default 1). \bsize avoids matching hexSize/liquidCapacity etc.
+    const sizeMatch = /\bsize\s*=\s*(\d+)/.exec(chain)
     const entity: DefEntity = {
       kind: classifyDef(b[2]),
       name: b[1],
       id: b[3],
       className: b[2],
       regionParts: parseRegionParts(chain),
+      size: sizeMatch ? parseInt(sizeMatch[1], 10) : 1,
+      // Turret = draws a shared foundation via DrawTurret (or a *Turret class).
+      isTurret: /new\s+DrawTurret\b/.test(chain) || /Turret$/.test(b[2]),
       file
     }
     found.push({ index: b.index, entity })

@@ -5,7 +5,12 @@ export interface LayerFlags {
   cell: boolean
   weapons: boolean
   outline: boolean
+  /** Draw a marker where a weapon's sprite is missing (default on). */
+  showMissing: boolean
 }
+
+/** Marker box size in canvas px for missing-sprite placeholders. */
+const MARKER = 14
 
 /** Sprite dimensions, keyed by file path. Weapons/base/cell must be measured
  *  (loaded) before layout so the canvas can be sized and centered. */
@@ -36,6 +41,8 @@ export interface Placement {
   flipX: boolean
   /** present only for the cell layer → multiply tint. */
   tint?: string
+  /** a missing-sprite placeholder marker (no image drawn). */
+  marker?: boolean
   label: string
 }
 
@@ -60,6 +67,7 @@ interface Item {
   height: number
   flipX: boolean
   tint?: string
+  marker?: boolean
   label: string
 }
 
@@ -82,18 +90,27 @@ export function layoutComposite(input: CompositeInput): CompositeLayout {
   const outOfBounds: string[] = []
 
   const baseDim = dimOf(dims, base)
+  // Missing-weapon marker positions (in centered coords), appended on top later.
+  const markers: Array<{ ox: number; oy: number; label: string }> = []
 
-  // Weapon copies. `top` splits layer; missing sprites are recorded, not drawn.
+  // Weapon copies. `top` splits layer; missing sprites get a placeholder marker
+  // at the same computed position (mirror-aware) instead of being silently dropped.
   const addWeapon = (w: WeaponView): void => {
     const d = dimOf(dims, w.file)
-    if (!w.file || !d) {
-      notShown.push(w.label)
-      return
-    }
+    // Coordinate math unchanged: +x right, +y forward (oy = -py inverts image Y).
     const px = w.pos.x * scale
-    const py = w.pos.y * scale // forward; Y-inversion applied as oy = -py below
+    const py = w.pos.y * scale
     if (baseDim && (Math.abs(px) > baseDim.width / 2 || Math.abs(py) > baseDim.height / 2)) {
       outOfBounds.push(w.label)
+    }
+    if (!w.file || !d) {
+      notShown.push(w.label)
+      if (w.mirror) {
+        markers.push({ ox: px, oy: -py, label: w.label }, { ox: -px, oy: -py, label: w.label })
+      } else {
+        markers.push({ ox: px, oy: -py, label: w.label })
+      }
+      return
     }
     const layer: Placement['layer'] = w.top ? 'weapon-top' : 'weapon-under'
     const push = (ox: number, flipX: boolean): void => {
@@ -117,6 +134,13 @@ export function layoutComposite(input: CompositeInput): CompositeLayout {
   }
   if (flags.weapons) weapons.filter((w) => w.top).forEach(addWeapon)
 
+  // Missing markers on top of everything (only when enabled).
+  if (flags.showMissing) {
+    for (const m of markers) {
+      items.push({ layer: 'weapon-top', file: '', ox: m.ox, oy: m.oy, width: MARKER, height: MARKER, flipX: false, marker: true, label: m.label })
+    }
+  }
+
   // Symmetric bounds so the center stays the canvas center.
   let halfW = baseDim ? baseDim.width / 2 : 16
   let halfH = baseDim ? baseDim.height / 2 : 16
@@ -139,6 +163,7 @@ export function layoutComposite(input: CompositeInput): CompositeLayout {
     height: it.height,
     flipX: it.flipX,
     tint: it.tint,
+    marker: it.marker,
     label: it.label
   }))
 

@@ -51,6 +51,44 @@ export function resolveCell(leaves: Leaf[], unitId: string): string | null {
   )
 }
 
+/** Leaves under any `blocks/` folder (block sprites live here). */
+function blockLeaves(leaves: Leaf[]): Leaf[] {
+  return leaves.filter((l) => l.path.toLowerCase().includes('/blocks/'))
+}
+
+/** A block's main sprite `<id>.png` (prefer under blocks/, exact stem only). */
+export function resolveBlockMain(leaves: Leaf[], id: string): string | null {
+  const inBlocks = blockLeaves(leaves)
+  return (
+    inBlocks.find((l) => l.stem === id)?.path ?? leaves.find((l) => l.stem === id)?.path ?? null
+  )
+}
+
+/** A region-part sprite `<id><suffix>.png` (prefix-tolerant suffix fallback). */
+export function resolveBlockPart(leaves: Leaf[], id: string, suffix: string): string | null {
+  const key = `${id}${suffix}`
+  const inBlocks = blockLeaves(leaves)
+  return (
+    inBlocks.find((l) => l.stem === key)?.path ??
+    inBlocks.find((l) => l.stem.endsWith(key))?.path ??
+    null
+  )
+}
+
+/**
+ * A turret foundation from the shared `blocks/turretBase/` folder:
+ *   1. `<id>-base.png` (custom), else
+ *   2. `block-<size>.png` (generic size plate), else null.
+ */
+export function resolveFoundation(leaves: Leaf[], id: string, size: number): string | null {
+  const tb = leaves.filter((l) => l.path.toLowerCase().includes('/turretbase/'))
+  return (
+    tb.find((l) => l.stem === `${id}-base`)?.path ??
+    tb.find((l) => l.stem === `block-${size}`)?.path ??
+    null
+  )
+}
+
 /** Collect all sprite leaves under a group tree, paths normalized to `/`. */
 export function flattenLeaves(groups: SpriteNode[]): Leaf[] {
   const out: Leaf[] = []

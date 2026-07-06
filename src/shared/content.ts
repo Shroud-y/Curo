@@ -41,6 +41,10 @@ export interface DefEntity {
   id: string
   className: string
   regionParts: RegionPartRef[]
+  /** `size = <int>` from the chain (default 1). Drives turret foundation plates. */
+  size: number
+  /** true for DrawTurret-based blocks (get a shared turretBase foundation). */
+  isTurret: boolean
   file: string
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Settings, SpriteImage, SpriteNode } from '@shared/types'
-import type { ParseResult, UnitEntity } from '@shared/content'
+import type { DefEntity, ParseResult, UnitEntity } from '@shared/content'
 import { SpriteTree } from './components/SpriteTree'
 import { PreviewPane } from './components/PreviewPane'
 import { InfoPane } from './components/InfoPane'
@@ -9,8 +9,11 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { DebugPanel } from './components/DebugPanel'
 import { ContentTree } from './components/ContentTree'
 import { CompositeView } from './components/CompositeView'
+import { BlockTree } from './components/BlockTree'
+import { BlockCompositeView } from './components/BlockCompositeView'
 import { flattenLeaves } from './lib/resolveSprites'
 import { buildUnitViews, type ComponentSel, type UnitView } from './lib/unitModel'
+import { buildBlockViews, type BlockComponentSel, type BlockView } from './lib/blockModel'
 import styles from './App.module.css'
 
 const NO_SPRITES_MSG = 'No sprites folder found — is this a Mindustry mod root?'
@@ -43,22 +46,33 @@ export default function App(): JSX.Element {
   const [spritesVersion, setSpritesVersion] = useState(0)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
   const [showDebug, setShowDebug] = useState(false)
-  const [leftTab, setLeftTab] = useState<'sprites' | 'units'>('sprites')
+  const [leftTab, setLeftTab] = useState<'sprites' | 'units' | 'blocks'>('sprites')
   const [unitSel, setUnitSel] = useState<{ unitId: string; component: ComponentSel | null } | null>(
     null
   )
+  const [blockSel, setBlockSel] = useState<{
+    blockId: string
+    component: BlockComponentSel | null
+  } | null>(null)
 
   const selectSprite = useCallback((path: string | null) => {
     setActivePath(path)
     setActiveUnresolved(path === null)
   }, [])
 
-  // Render-ready unit views, rebuilt when the parse result or sprite tree changes.
+  // Render-ready views, rebuilt when the parse result or sprite tree changes.
   const unitViews = useMemo<UnitView[]>(() => {
     if (!parseResult) return []
     const leaves = flattenLeaves(groups)
     const units = parseResult.entities.filter((e): e is UnitEntity => e.kind === 'unit')
     return buildUnitViews(units, leaves, parseResult.modPrefix)
+  }, [parseResult, groups])
+
+  const blockViews = useMemo<BlockView[]>(() => {
+    if (!parseResult) return []
+    const leaves = flattenLeaves(groups)
+    const blocks = parseResult.entities.filter((e): e is DefEntity => e.kind === 'block')
+    return buildBlockViews(blocks, leaves)
   }, [parseResult, groups])
 
   // Load a mod root's sprite groups. On success commits the root + groups;
@@ -161,6 +175,10 @@ export default function App(): JSX.Element {
     () => unitViews.find((v) => v.unit.id === unitSel?.unitId) ?? null,
     [unitViews, unitSel]
   )
+  const activeBlock = useMemo(
+    () => blockViews.find((v) => v.block.id === blockSel?.blockId) ?? null,
+    [blockViews, blockSel]
+  )
 
   if (!modRoot) {
     return <EmptyState onPick={pickFolder} error={pickError} />
@@ -201,11 +219,19 @@ export default function App(): JSX.Element {
           >
             Units{parseResult ? ` (${unitViews.length})` : ''}
           </button>
+          <button
+            className={leftTab === 'blocks' ? styles.tabActive : styles.tab}
+            onClick={() => setLeftTab('blocks')}
+            disabled={!parseResult}
+            title={parseResult ? '' : 'Parse content first'}
+          >
+            Blocks{parseResult ? ` (${blockViews.length})` : ''}
+          </button>
         </div>
 
         {pickError && <p className={styles.pickError}>{pickError}</p>}
         <div className={styles.treeScroll}>
-          {leftTab === 'sprites' ? (
+          {leftTab === 'sprites' &&
             groups.map((group) => (
               <SpriteTree
                 key={group.path}
@@ -213,8 +239,8 @@ export default function App(): JSX.Element {
                 selectedPath={activePath}
                 onSelect={(node) => selectSprite(node.path)}
               />
-            ))
-          ) : (
+            ))}
+          {leftTab === 'units' && (
             <ContentTree
               units={unitViews}
               selectedUnitId={unitSel?.unitId ?? null}
@@ -229,6 +255,21 @@ export default function App(): JSX.Element {
               }}
             />
           )}
+          {leftTab === 'blocks' && (
+            <BlockTree
+              blocks={blockViews}
+              selectedBlockId={blockSel?.blockId ?? null}
+              selectedComponent={blockSel?.component ?? null}
+              onSelectBlock={(v) => {
+                setBlockSel({ blockId: v.block.id, component: null })
+                selectSprite(v.main)
+              }}
+              onSelectComponent={(v, c) => {
+                setBlockSel({ blockId: v.block.id, component: c })
+                selectSprite(c.file)
+              }}
+            />
+          )}
         </div>
       </aside>
 
@@ -237,6 +278,12 @@ export default function App(): JSX.Element {
           <CompositeView
             view={activeUnit}
             component={unitSel?.component ?? null}
+            reloadVersion={spritesVersion}
+          />
+        ) : leftTab === 'blocks' && activeBlock ? (
+          <BlockCompositeView
+            view={activeBlock}
+            component={blockSel?.component ?? null}
             reloadVersion={spritesVersion}
           />
         ) : (

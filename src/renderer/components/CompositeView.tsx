@@ -3,7 +3,9 @@ import type { ComponentSel, UnitView } from '../lib/unitModel'
 import { TEAMS } from '../lib/unitModel'
 import { layoutComposite, type Dims, type LayerFlags } from '../lib/composite'
 import { tintCell } from '../lib/cellTint'
+import { drawMissingMarker } from '../lib/marker'
 import { PixelViewport } from './PixelViewport'
+import { useSprites } from './useSprites'
 import styles from './CompositeView.module.css'
 
 interface Props {
@@ -14,54 +16,17 @@ interface Props {
   reloadVersion: number
 }
 
-interface Loaded {
-  img: HTMLImageElement
-  width: number
-  height: number
-}
-
-/**
- * Load a set of sprite paths (dataURL + dims) into decoded images. Reloads whenever
- * the file set OR `version` changes — a Replace/live-reload bumps `version`, so an
- * edited file at the same path is refetched instead of served stale.
- */
-function useSprites(files: string[], version: number): { imgs: Map<string, Loaded> } {
-  const [imgs, setImgs] = useState<Map<string, Loaded>>(new Map())
-  const key = files.slice().sort().join('|')
-
-  useEffect(() => {
-    let cancelled = false
-    void Promise.all(
-      files
-        .filter(Boolean)
-        .map(async (file): Promise<[string, Loaded]> => {
-          const s = await window.api.readSprite(file)
-          const img = new Image()
-          await new Promise<void>((res) => {
-            img.onload = () => res()
-            img.onerror = () => res()
-            img.src = s.dataUrl
-          })
-          return [file, { img, width: s.width, height: s.height }]
-        })
-    ).then((entries) => {
-      if (!cancelled) setImgs(new Map(entries))
-    })
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, version])
-
-  return { imgs }
-}
-
 export function CompositeView({ view, component, reloadVersion }: Props): JSX.Element {
   const [mode, setMode] = useState<'ingame' | 'component'>('ingame')
   const [scale, setScale] = useState(4)
   const [teamKey, setTeamKey] = useState<string>('Sharded')
   const [customTeam, setCustomTeam] = useState('#7fd3ff')
-  const [flags, setFlags] = useState<LayerFlags>({ cell: true, weapons: true, outline: false })
+  const [flags, setFlags] = useState<LayerFlags>({
+    cell: true,
+    weapons: true,
+    outline: false,
+    showMissing: true
+  })
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const team = teamKey === 'Custom' ? customTeam : TEAMS[teamKey]
@@ -135,6 +100,10 @@ export function CompositeView({ view, component, reloadVersion }: Props): JSX.El
     }
 
     for (const p of layout.placements) {
+      if (p.marker) {
+        drawMissingMarker(ctx, p.cx, p.cy, p.width)
+        continue
+      }
       const loaded = imgs.get(p.file)
       if (!loaded) continue
       ctx.save()
@@ -199,6 +168,14 @@ export function CompositeView({ view, component, reloadVersion }: Props): JSX.El
               cell
             </label>
           )}
+          <label className={styles.check} title="Show a marker where a weapon sprite is missing">
+            <input
+              type="checkbox"
+              checked={flags.showMissing}
+              onChange={(e) => setFlags((f) => ({ ...f, showMissing: e.target.checked }))}
+            />
+            missing
+          </label>
           <label className={`${styles.check} ${styles.disabled}`} title="Outline generation not implemented yet">
             <input type="checkbox" checked={false} disabled />
             outline

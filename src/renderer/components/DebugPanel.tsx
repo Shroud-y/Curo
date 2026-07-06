@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { SpriteNode } from '@shared/types'
 import type { DefEntity, DefKind, ParseResult, RegionPartRef, UnitEntity } from '@shared/content'
 import { flattenLeaves, resolveCell, resolveUnit, type UnitResolution } from '../lib/resolveSprites'
+import { buildBlockViews, type BlockView } from '../lib/blockModel'
 import styles from './DebugPanel.module.css'
 
 interface Props {
@@ -42,10 +43,27 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
   // Units with a real -cell sprite (tint-capable) vs baked-in cell.
   const tintCapable = units.filter((u) => u.hasCell && resolveCell(leaves, u.id) !== null)
 
+  // Block foundation resolution + code-drawn blocks.
+  const blockViews = useMemo(() => buildBlockViews(blocks, leaves), [blocks, leaves])
+  const turrets = blockViews.filter((b) => b.isTurret)
+  const noBase = blockViews.filter((b) => b.main === null)
+  // Confirm the turretBase folder is actually indexed.
+  const turretBaseCount = leaves.filter((l) => l.path.toLowerCase().includes('/turretbase/')).length
+  // Full-tree index sanity: total png + the top-level sprite dirs discovered.
+  const topDirs = [
+    ...new Set(
+      leaves
+        .map((l) => /\/sprites\/([^/]+)\//.exec(l.path)?.[1])
+        .filter((d): d is string => Boolean(d))
+    )
+  ].sort()
+
   const [copied, setCopied] = useState(false)
   const copy = (): void => {
     void navigator.clipboard
-      .writeText(buildDump(result, resolved, blocks, items, liquids, other, resolvedCount, weaponsWithRegion))
+      .writeText(
+        buildDump(result, resolved, blocks, items, liquids, other, resolvedCount, weaponsWithRegion, turrets, turretBaseCount)
+      )
       .then(() => {
         setCopied(true)
         setTimeout(() => setCopied(false), 1200)
@@ -82,14 +100,44 @@ export function DebugPanel({ result, groups, onClose }: Props): JSX.Element {
           {tintCapable.length ? tintCapable.map((u) => u.id).join(', ') : '(none — all baked-in)'}
         </p>
 
+        <p className={styles.counts}>
+          <b>sprite index</b>: {leaves.length} png · top-level dirs:{' '}
+          {topDirs.length ? topDirs.join(', ') : '(none)'}
+        </p>
+
+        <p className={styles.counts}>
+          <b>turretBase index</b>: {turretBaseCount} png{' '}
+          <span className={turretBaseCount ? styles.ok : styles.bad}>
+            {turretBaseCount ? '(scanned)' : '(NOT FOUND — nested block subfolder not indexed)'}
+          </span>{' '}
+          · <b>no base sprite</b> ({noBase.length}):{' '}
+          {noBase.length ? noBase.map((b) => `${b.block.id} (${b.block.className})`).join(', ') : '(none)'}
+        </p>
+
         <div className={styles.scroll}>
+          <Section title={`Turret foundations (${turrets.length})`}>
+            {turrets.map((b) => (
+              <div key={b.block.file + b.block.name} className={styles.entity}>
+                <b>{b.block.id}</b> <span className={styles.dim}>size={b.size}</span>
+                {' foundation → '}
+                {b.foundation ? (
+                  <span className={styles.file}>turretBase/{b.foundationLabel}.png</span>
+                ) : (
+                  <span className={styles.bad}>
+                    NONE (looked for {b.block.id}-base.png / block-{b.size}.png)
+                  </span>
+                )}
+              </div>
+            ))}
+          </Section>
+
           <Section title={`Units (${units.length})`}>
             {resolved.map((r) => (
               <UnitRow key={r.unit.file + r.unit.name} unit={r.unit} res={r.res} />
             ))}
           </Section>
 
-          <DefSection title="Blocks" defs={blocks} />
+          <DefSection title="Blocks" defs={blocks} showSize />
           <DefSection title="Items" defs={items} />
           <DefSection title="Liquids" defs={liquids} />
           <DefSection title="Other" defs={other} />
@@ -128,7 +176,15 @@ function UnitRow({ unit, res }: { unit: UnitEntity; res: UnitResolution }): JSX.
   )
 }
 
-function DefSection({ title, defs }: { title: string; defs: DefEntity[] }): JSX.Element | null {
+function DefSection({
+  title,
+  defs,
+  showSize = false
+}: {
+  title: string
+  defs: DefEntity[]
+  showSize?: boolean
+}): JSX.Element | null {
   if (defs.length === 0) return null
   return (
     <Section title={`${title} (${defs.length})`}>
@@ -136,7 +192,8 @@ function DefSection({ title, defs }: { title: string; defs: DefEntity[] }): JSX.
         <div key={d.file + d.name} className={styles.entity}>
           <div className={styles.entityHead}>
             <b>{d.id}</b>
-            <span className={styles.dim}>{d.className}</span>
+            <span className={styles.dim}>({d.className})</span>
+            {showSize && <span className={styles.dim}>size={d.size}</span>}
           </div>
           <div className={styles.dim}>
             parts: {d.regionParts.length ? d.regionParts.map(partLabel).join(', ') : '—'}
@@ -168,7 +225,9 @@ function buildDump(
   liquids: DefEntity[],
   other: DefEntity[],
   resolvedCount: number,
-  weaponsWithRegion: number
+  weaponsWithRegion: number,
+  turrets: BlockView[],
+  turretBaseCount: number
 ): string {
   const lines: string[] = []
   lines.push(
@@ -177,6 +236,15 @@ function buildDump(
       `${other.length} other · ${resolvedCount}/${weaponsWithRegion} regions resolved · ` +
       `${result.files.length} files`
   )
+
+  lines.push('', `# Turret foundations (turretBase index: ${turretBaseCount} png)`)
+  for (const b of turrets) {
+    const found = b.foundation
+      ? `turretBase/${b.foundationLabel}.png`
+      : `NONE (looked for ${b.block.id}-base.png / block-${b.size}.png)`
+    lines.push(`${b.block.id} size=${b.size} foundation -> ${found}`)
+  }
+
   lines.push('', '# Units')
   for (const { unit, res } of resolved) {
     lines.push(`${unit.id} (${unit.name})${unit.hasCell ? '' : ' [noCell]'}`)
@@ -186,15 +254,16 @@ function buildDump(
       lines.push(`  "${w.region}" -> ${target}`)
     }
   }
-  const dumpDefs = (title: string, defs: DefEntity[]): void => {
+  const dumpDefs = (title: string, defs: DefEntity[], withSize = false): void => {
     if (!defs.length) return
     lines.push('', `# ${title}`)
     for (const d of defs) {
       const parts = d.regionParts.length ? d.regionParts.map(partLabel).join(', ') : '—'
-      lines.push(`${d.id} (${d.className}) parts: ${parts}`)
+      const size = withSize ? ` size=${d.size}` : ''
+      lines.push(`${d.id} (${d.className})${size} parts: ${parts}`)
     }
   }
-  dumpDefs('Blocks', blocks)
+  dumpDefs('Blocks', blocks, true)
   dumpDefs('Items', items)
   dumpDefs('Liquids', liquids)
   dumpDefs('Other', other)
