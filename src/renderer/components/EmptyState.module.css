@@ -1,0 +1,36 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.card {
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.sub {
+  margin: 6px 0 26px;
+  color: var(--text-dim);
+}
+
+.pickBtn {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pickBtn:hover {
+  filter: brightness(1.1);
+}

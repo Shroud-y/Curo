@@ -1,0 +1,35 @@
+:root {
+  --bg: #14161c;
+  --panel: #1b1e26;
+  --panel-2: #21242e;
+  --border: #2c303c;
+  --text: #e6e8ee;
+  --text-dim: #9aa0ad;
+  --accent: #4c8bf5;
+  --accent-soft: #2a3a5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
