@@ -33,3 +33,34 @@ button {
   font-family: inherit;
   cursor: pointer;
 }
+
+/* Stylized dark scrollbars everywhere. Firefox thin fallback + WebKit thumb. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3f4d transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #3a3f4d;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #4d5464;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

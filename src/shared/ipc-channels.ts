@@ -14,6 +14,9 @@ export enum IpcChannel {
   // Settings
   SettingsGet = 'settings:get',
   SettingsChooseEditor = 'settings:choose-editor',
+  SettingsChooseVanilla = 'settings:choose-vanilla',
+  // Compare references
+  ReadVanillaSprites = 'sprites:read-vanilla',
   // Sprite actions
   OpenInEditor = 'sprites:open-in-editor',
   ReplaceSprite = 'sprites:replace',

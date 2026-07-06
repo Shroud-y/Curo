@@ -8,17 +8,20 @@ interface Props {
   fitKey: string | null
   /** App-level category tabs, pinned left of the toolbar. */
   leading?: React.ReactNode
+  /** Mode segmented control (View/Compare) from App. */
+  modeTabs?: React.ReactNode
 }
 
 /** Single-sprite preview: the shared pixel viewport wrapping one <img>. Always
  *  renders the viewport (even with no sprite) so the toolbar/tabs stay visible. */
-export function PreviewPane({ image, fitKey, leading }: Props): JSX.Element {
+export function PreviewPane({ image, fitKey, leading, modeTabs }: Props): JSX.Element {
   return (
     <PixelViewport
       width={image?.width ?? 0}
       height={image?.height ?? 0}
       fitKey={fitKey}
       leading={leading}
+      toolbar={modeTabs}
     >
       {image ? (
         <img

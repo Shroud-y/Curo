@@ -12,14 +12,24 @@ interface Props {
   view: UnitView
   /** Isolated component from the tree; when set, Component mode is selected. */
   component: ComponentSel | null
+  /** In-game (composite) vs Component (isolated) — driven by App. */
+  mode: 'ingame' | 'component'
   /** Bumps on any watched-sprite change → forces a reload (busts stale images). */
   reloadVersion: number
+  /** Mode segmented control (In-game/Component/Compare) from App. */
+  modeTabs: React.ReactNode
   /** App-level category tabs, pinned left of the toolbar. */
   leading?: React.ReactNode
 }
 
-export function CompositeView({ view, component, reloadVersion, leading }: Props): JSX.Element {
-  const [mode, setMode] = useState<'ingame' | 'component'>('ingame')
+export function CompositeView({
+  view,
+  component,
+  mode,
+  reloadVersion,
+  modeTabs,
+  leading
+}: Props): JSX.Element {
   const [scale, setScale] = useState(4)
   const [teamKey, setTeamKey] = useState<string>('Sharded')
   const [customTeam, setCustomTeam] = useState('#7fd3ff')
@@ -33,12 +43,6 @@ export function CompositeView({ view, component, reloadVersion, leading }: Props
 
   const team = teamKey === 'Custom' ? customTeam : TEAMS[teamKey]
   const hasCellUi = view.unit.hasCell && view.cell !== null
-
-  // Selecting a component from the tree switches to Component mode; selecting the
-  // unit node (component === null) returns to In-game.
-  useEffect(() => {
-    setMode(component ? 'component' : 'ingame')
-  }, [component, view.unit.id])
 
   // All sprites this unit might draw — loaded up front so mode switches are instant.
   const files = useMemo(() => {
@@ -122,20 +126,7 @@ export function CompositeView({ view, component, reloadVersion, leading }: Props
 
   const toolbar = (
     <>
-      <div className={styles.segmented}>
-        <button
-          className={mode === 'ingame' ? styles.segActive : styles.seg}
-          onClick={() => setMode('ingame')}
-        >
-          In-game
-        </button>
-        <button
-          className={mode === 'component' ? styles.segActive : styles.seg}
-          onClick={() => setMode('component')}
-        >
-          Component
-        </button>
-      </div>
+      {modeTabs}
 
       {mode === 'ingame' && (
         <>

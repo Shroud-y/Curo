@@ -29,6 +29,7 @@ export interface SpriteTreeResult {
 export interface Settings {
   lastModRoot?: string
   editorPath?: string
+  vanillaSpritesPath?: string
 }
 
 /** Payload pushed to the renderer when a watched .png is added/changed/removed. */

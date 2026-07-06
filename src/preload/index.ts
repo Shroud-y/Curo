@@ -1,6 +1,12 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IpcChannel } from '@shared/ipc-channels'
-import type { Settings, SpriteImage, SpritesChangedEvent, SpriteTreeResult } from '@shared/types'
+import type {
+  Settings,
+  SpriteImage,
+  SpriteNode,
+  SpritesChangedEvent,
+  SpriteTreeResult
+} from '@shared/types'
 import type { ParseResult } from '@shared/content'
 
 function subscribe<T>(channel: IpcChannel, cb: (payload: T) => void): () => void {
@@ -25,6 +31,11 @@ const api = {
   getSettings: (): Promise<Settings> => ipcRenderer.invoke(IpcChannel.SettingsGet),
   /** Pick an editor executable; returns updated settings. */
   chooseEditor: (): Promise<Settings> => ipcRenderer.invoke(IpcChannel.SettingsChooseEditor),
+  /** Pick the vanilla Mindustry sprites folder; returns updated settings. */
+  chooseVanilla: (): Promise<Settings> => ipcRenderer.invoke(IpcChannel.SettingsChooseVanilla),
+  /** Recursively read the configured vanilla sprites folder; null if unset. */
+  readVanillaSprites: (): Promise<SpriteNode[] | null> =>
+    ipcRenderer.invoke(IpcChannel.ReadVanillaSprites),
   /** Launch the configured editor with the sprite. Rejects 'NO_EDITOR' if unset. */
   openInEditor: (spritePath: string): Promise<void> =>
     ipcRenderer.invoke(IpcChannel.OpenInEditor, spritePath),

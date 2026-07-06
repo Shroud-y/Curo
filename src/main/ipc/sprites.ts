@@ -202,6 +202,26 @@ export function registerSpriteIpc(): void {
     return writeSettings({ editorPath: result.filePaths[0] })
   })
 
+  // Pick an unpacked vanilla Mindustry sprites folder; persist + return settings.
+  ipcMain.handle(IpcChannel.SettingsChooseVanilla, async (event): Promise<Settings> => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const result = win
+      ? await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+      : await dialog.showOpenDialog({ properties: ['openDirectory'] })
+    if (result.canceled || result.filePaths.length === 0) return readSettings()
+    return writeSettings({ vanillaSpritesPath: result.filePaths[0] })
+  })
+
+  // Recursively read a vanilla sprites folder into a tree (same walk as the mod).
+  ipcMain.handle(
+    IpcChannel.ReadVanillaSprites,
+    async (): Promise<SpriteNode[] | null> => {
+      const { vanillaSpritesPath } = await readSettings()
+      if (!vanillaSpritesPath || !(await isDir(vanillaSpritesPath))) return null
+      return readDir(vanillaSpritesPath)
+    }
+  )
+
   // Launch the configured editor with the sprite path. Detached + unref so it
   // outlives Curo. Throws (rejects) if no editor is configured.
   ipcMain.handle(

@@ -7,6 +7,8 @@ export interface Settings {
   lastModRoot?: string
   /** Absolute path to an external image editor executable (e.g. Aseprite). */
   editorPath?: string
+  /** Absolute path to an unpacked vanilla Mindustry sprites folder (compare refs). */
+  vanillaSpritesPath?: string
 }
 
 function configPath(): string {

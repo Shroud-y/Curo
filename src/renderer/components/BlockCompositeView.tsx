@@ -10,20 +10,25 @@ import styles from './CompositeView.module.css'
 interface Props {
   view: BlockView
   component: BlockComponentSel | null
+  mode: 'ingame' | 'component'
   reloadVersion: number
+  /** Mode segmented control (In-game/Component/Compare) from App. */
+  modeTabs: React.ReactNode
   /** App-level category tabs, pinned left of the toolbar. */
   leading?: React.ReactNode
 }
 
-export function BlockCompositeView({ view, component, reloadVersion, leading }: Props): JSX.Element {
-  const [mode, setMode] = useState<'ingame' | 'component'>('ingame')
+export function BlockCompositeView({
+  view,
+  component,
+  mode,
+  reloadVersion,
+  modeTabs,
+  leading
+}: Props): JSX.Element {
   const [showMissing, setShowMissing] = useState(true)
   const [showGhost, setShowGhost] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    setMode(component ? 'component' : 'ingame')
-  }, [component, view.block.id])
 
   const files = useMemo(() => {
     const set = new Set<string>()
@@ -80,14 +85,7 @@ export function BlockCompositeView({ view, component, reloadVersion, leading }: 
 
   const toolbar = (
     <>
-      <div className={styles.segmented}>
-        <button className={mode === 'ingame' ? styles.segActive : styles.seg} onClick={() => setMode('ingame')}>
-          In-game
-        </button>
-        <button className={mode === 'component' ? styles.segActive : styles.seg} onClick={() => setMode('component')}>
-          Component
-        </button>
-      </div>
+      {modeTabs}
       {mode === 'ingame' && (
         <>
           <label className={styles.check} title="Show a marker where a region sprite is missing">

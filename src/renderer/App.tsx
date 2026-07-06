@@ -11,9 +11,12 @@ import { ContentTree } from './components/ContentTree'
 import { CompositeView } from './components/CompositeView'
 import { BlockTree } from './components/BlockTree'
 import { BlockCompositeView } from './components/BlockCompositeView'
+import { CompareView } from './components/CompareView'
+import { RefPicker, type RefEntry } from './components/RefPicker'
 import { flattenLeaves } from './lib/resolveSprites'
 import { buildUnitViews, type ComponentSel, type UnitView } from './lib/unitModel'
 import { buildBlockViews, type BlockComponentSel, type BlockView } from './lib/blockModel'
+import { MAX_REFS, type RefItem } from './lib/compare'
 import styles from './App.module.css'
 
 const NO_SPRITES_MSG = 'No sprites folder found — is this a Mindustry mod root?'
@@ -55,10 +58,41 @@ export default function App(): JSX.Element {
     component: BlockComponentSel | null
   } | null>(null)
 
+  // View mode: composite ingame/component (units/blocks) + a global Compare flag.
+  const [compMode, setCompMode] = useState<'ingame' | 'component'>('ingame')
+  const [compare, setCompare] = useState(false)
+  const [refs, setRefs] = useState<RefItem[]>([])
+  const [vanillaGroups, setVanillaGroups] = useState<SpriteNode[] | null>(null)
+
   const selectSprite = useCallback((path: string | null) => {
     setActivePath(path)
     setActiveUnresolved(path === null)
   }, [])
+
+  const loadVanilla = useCallback(async () => {
+    setVanillaGroups(await window.api.readVanillaSprites())
+  }, [])
+
+  // Reference lists (flat name+path) for the compare picker.
+  const mineRefs = useMemo<RefEntry[]>(
+    () => flattenLeaves(groups).map((l) => ({ name: l.stem, path: l.path })),
+    [groups]
+  )
+  const vanillaRefs = useMemo<RefEntry[] | null>(
+    () => (vanillaGroups ? flattenLeaves(vanillaGroups).map((l) => ({ name: l.stem, path: l.path })) : null),
+    [vanillaGroups]
+  )
+
+  const toggleRef = useCallback((item: RefItem) => {
+    setRefs((prev) => (prev.length >= MAX_REFS ? prev : [...prev, item]))
+  }, [])
+  const removeRef = useCallback((path: string) => {
+    setRefs((prev) => prev.filter((r) => r.path !== path))
+  }, [])
+  const chooseVanilla = useCallback(async () => {
+    setSettings(await window.api.chooseVanilla())
+    await loadVanilla()
+  }, [loadVanilla])
 
   // Render-ready views, rebuilt when the parse result or sprite tree changes.
   const unitViews = useMemo<UnitView[]>(() => {
@@ -93,13 +127,14 @@ export default function App(): JSX.Element {
     if (path) await loadRoot(path)
   }, [loadRoot])
 
-  // Auto-load the last-opened root + settings on launch.
+  // Auto-load the last-opened root + settings + vanilla index on launch.
   useEffect(() => {
     void window.api.getSettings().then(setSettings)
     void window.api.getLastRoot().then((last) => {
       if (last) void loadRoot(last)
     })
-  }, [loadRoot])
+    void loadVanilla()
+  }, [loadRoot, loadVanilla])
 
   // Load the active sprite's bytes + dimensions. reloadNonce forces a re-read
   // when the watcher reports the active file changed on disk.
@@ -212,6 +247,40 @@ export default function App(): JSX.Element {
     </div>
   )
 
+  // View-mode segmented: composites get In-game/Component/Compare, the raw
+  // Sprites tab gets View/Compare. Compare is a global flag across tabs.
+  const isSprites = leftTab === 'sprites'
+  const modeActive = compare ? 'compare' : isSprites ? 'view' : compMode
+  const modeBtn = (key: string, label: string, onClick: () => void): JSX.Element => (
+    <button
+      className={modeActive === key ? styles.catTabActive : styles.catTab}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  )
+  const modeTabs = (
+    <div className={styles.catTabs}>
+      {isSprites ? (
+        modeBtn('view', 'View', () => setCompare(false))
+      ) : (
+        <>
+          {modeBtn('ingame', 'In-game', () => {
+            setCompare(false)
+            setCompMode('ingame')
+          })}
+          {modeBtn('component', 'Component', () => {
+            setCompare(false)
+            setCompMode('component')
+          })}
+        </>
+      )}
+      {modeBtn('compare', 'Compare', () => setCompare(true))}
+    </div>
+  )
+
+  const activeName = activePath ? (activePath.split(/[\\/]/).pop() ?? '').replace(/\.png$/i, '') : ''
+
   return (
     <div className={styles.app}>
       <aside className={styles.left}>
@@ -250,10 +319,12 @@ export default function App(): JSX.Element {
               selectedComponent={unitSel?.component ?? null}
               onSelectUnit={(v) => {
                 setUnitSel({ unitId: v.unit.id, component: null })
+                setCompMode('ingame')
                 selectSprite(v.base)
               }}
               onSelectComponent={(v, c) => {
                 setUnitSel({ unitId: v.unit.id, component: c })
+                setCompMode('component')
                 selectSprite(c.file)
               }}
             />
@@ -265,10 +336,12 @@ export default function App(): JSX.Element {
               selectedComponent={blockSel?.component ?? null}
               onSelectBlock={(v) => {
                 setBlockSel({ blockId: v.block.id, component: null })
+                setCompMode('ingame')
                 selectSprite(v.main)
               }}
               onSelectComponent={(v, c) => {
                 setBlockSel({ blockId: v.block.id, component: c })
+                setCompMode('component')
                 selectSprite(c.file)
               }}
             />
@@ -277,22 +350,35 @@ export default function App(): JSX.Element {
       </aside>
 
       <main className={styles.center}>
-        {leftTab === 'units' && activeUnit ? (
+        {compare ? (
+          <CompareView
+            currentPath={activePath}
+            currentName={activeName}
+            refs={refs}
+            reloadVersion={spritesVersion}
+            modeTabs={modeTabs}
+            leading={categoryTabs}
+          />
+        ) : leftTab === 'units' && activeUnit ? (
           <CompositeView
             view={activeUnit}
             component={unitSel?.component ?? null}
+            mode={compMode}
             reloadVersion={spritesVersion}
+            modeTabs={modeTabs}
             leading={categoryTabs}
           />
         ) : leftTab === 'blocks' && activeBlock ? (
           <BlockCompositeView
             view={activeBlock}
             component={blockSel?.component ?? null}
+            mode={compMode}
             reloadVersion={spritesVersion}
+            modeTabs={modeTabs}
             leading={categoryTabs}
           />
         ) : (
-          <PreviewPane image={image} fitKey={activePath} leading={categoryTabs} />
+          <PreviewPane image={image} fitKey={activePath} leading={categoryTabs} modeTabs={modeTabs} />
         )}
       </main>
 
@@ -300,19 +386,44 @@ export default function App(): JSX.Element {
         <div className={styles.statusPath} title={modRoot}>
           {shortenPath(modRoot)}
         </div>
-        <InfoPane
-          path={activePath}
-          unresolved={activeUnresolved}
-          image={image}
-          onOpenEditor={openInEditor}
-          onReplace={replaceSprite}
-        />
+        {compare ? (
+          <div className={styles.compareRight}>
+            <InfoPane
+              path={activePath}
+              unresolved={activeUnresolved}
+              image={image}
+              onOpenEditor={openInEditor}
+              onReplace={replaceSprite}
+            />
+            <div className={styles.refWrap}>
+              <RefPicker
+                currentPath={activePath}
+                mine={mineRefs}
+                vanilla={vanillaRefs}
+                refs={refs}
+                onToggle={toggleRef}
+                onRemove={removeRef}
+                onChooseVanilla={chooseVanilla}
+              />
+            </div>
+          </div>
+        ) : (
+          <InfoPane
+            path={activePath}
+            unresolved={activeUnresolved}
+            image={image}
+            onOpenEditor={openInEditor}
+            onReplace={replaceSprite}
+          />
+        )}
       </aside>
 
       {showSettings && (
         <SettingsPanel
           editorPath={settings.editorPath}
+          vanillaPath={settings.vanillaSpritesPath}
           onChooseEditor={chooseEditor}
+          onChooseVanilla={chooseVanilla}
           onClose={() => setShowSettings(false)}
         />
       )}
