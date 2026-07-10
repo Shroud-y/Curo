@@ -44,7 +44,7 @@ in-game unit/block previews, and one-click hand-off to your pixel editor.
 
 ## Build from source
 
-Requirements: [Node.js](https://nodejs.org/) 20+ and [pnpm](https://pnpm.io/).
+Requirements: [Node.js](https://nodejs.org/) 22.13+ and [pnpm](https://pnpm.io/).
 
 ```bash
 git clone https://github.com/Shroud-y/Curo.git
