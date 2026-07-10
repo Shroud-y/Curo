@@ -7,6 +7,8 @@ export interface LayerFlags {
   outline: boolean
   /** Draw a marker where a weapon's sprite is missing (default on). */
   showMissing: boolean
+  /** Overlay the unit's hitbox (hitSize square + physics circle). */
+  hitbox: boolean
 }
 
 /** Marker box size in canvas px for missing-sprite placeholders. */
@@ -20,6 +22,8 @@ export interface CompositeInput {
   base: string | null
   cell: string | null
   hasCell: boolean
+  /** UnitType.hitSize in world units (same unit as weapon .pos). */
+  hitSize: number
   weapons: WeaponView[]
   dims: Dims
   /** px per world-unit (dev slider). */
@@ -51,6 +55,14 @@ export interface CompositeLayout {
   canvasHeight: number
   center: { x: number; y: number }
   placements: Placement[]
+  /**
+   * Hitbox overlay in canvas coords, present when flags.hitbox is on.
+   * Mindustry's hitbox is an axis-aligned square of side hitSize centered on
+   * the unit (Hitboxc.hitbox → rect.setCentered(x, y, hitSize)); physics
+   * overlap uses the inscribed circle of radius hitSize/2. `size` is the
+   * square's side in canvas px (hitSize * scale).
+   */
+  hitbox: { cx: number; cy: number; size: number; hitSize: number } | null
   /** weapon labels skipped because their sprite is missing/unresolved. */
   notShown: string[]
   /** weapon labels whose position lands beyond the base sprite bounds. */
@@ -84,7 +96,7 @@ const dimOf = (dims: Dims, file: string | null): { width: number; height: number
  * mirror=true emits two copies: right normal at +x, left flipped at -x.
  */
 export function layoutComposite(input: CompositeInput): CompositeLayout {
-  const { base, cell, hasCell, weapons, dims, scale, team, flags } = input
+  const { base, cell, hasCell, hitSize, weapons, dims, scale, team, flags } = input
   const items: Item[] = []
   const notShown: string[] = []
   const outOfBounds: string[] = []
@@ -148,6 +160,13 @@ export function layoutComposite(input: CompositeInput): CompositeLayout {
     halfW = Math.max(halfW, Math.abs(it.ox) + it.width / 2)
     halfH = Math.max(halfH, Math.abs(it.oy) + it.height / 2)
   }
+  // Grow the canvas so a hitbox larger than the sprite isn't clipped
+  // (+14px below the square for its "hitSize N" label).
+  const hitboxPx = hitSize * scale
+  if (flags.hitbox) {
+    halfW = Math.max(halfW, hitboxPx / 2)
+    halfH = Math.max(halfH, hitboxPx / 2 + 14)
+  }
   const pad = 8
   const canvasWidth = Math.ceil(2 * (halfW + pad))
   const canvasHeight = Math.ceil(2 * (halfH + pad))
@@ -167,5 +186,9 @@ export function layoutComposite(input: CompositeInput): CompositeLayout {
     label: it.label
   }))
 
-  return { canvasWidth, canvasHeight, center, placements, notShown, outOfBounds }
+  const hitbox = flags.hitbox
+    ? { cx: center.x, cy: center.y, size: hitboxPx, hitSize }
+    : null
+
+  return { canvasWidth, canvasHeight, center, placements, hitbox, notShown, outOfBounds }
 }

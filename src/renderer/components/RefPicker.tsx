@@ -10,35 +10,22 @@ export interface RefEntry {
 interface Props {
   currentPath: string | null
   mine: RefEntry[]
-  /** null = vanilla folder not configured yet. */
-  vanilla: RefEntry[] | null
   refs: RefItem[]
   onToggle: (item: RefItem) => void
   onRemove: (path: string) => void
-  onChooseVanilla: () => void
 }
 
-export function RefPicker({
-  currentPath,
-  mine,
-  vanilla,
-  refs,
-  onToggle,
-  onRemove,
-  onChooseVanilla
-}: Props): JSX.Element {
-  const [tab, setTab] = useState<'mine' | 'vanilla'>('mine')
+export function RefPicker({ currentPath, mine, refs, onToggle, onRemove }: Props): JSX.Element {
   const [q, setQ] = useState('')
 
   const selected = useMemo(() => new Set(refs.map((r) => r.path)), [refs])
   const atCap = refs.length >= MAX_REFS
 
-  const list = tab === 'mine' ? mine : (vanilla ?? [])
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
-    const base = needle ? list.filter((e) => e.name.toLowerCase().includes(needle)) : list
+    const base = needle ? mine.filter((e) => e.name.toLowerCase().includes(needle)) : mine
     return base.slice(0, 400)
-  }, [list, q])
+  }, [mine, q])
 
   return (
     <div className={styles.pane}>
@@ -57,55 +44,35 @@ export function RefPicker({
         {refs.length}/{MAX_REFS} references
       </div>
 
-      <div className={styles.tabs}>
-        <button className={tab === 'mine' ? styles.tabActive : styles.tab} onClick={() => setTab('mine')}>
-          Mine
-        </button>
-        <button className={tab === 'vanilla' ? styles.tabActive : styles.tab} onClick={() => setTab('vanilla')}>
-          Vanilla
-        </button>
+      <input
+        className={styles.search}
+        placeholder="Search…"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      <div className={styles.list}>
+        {filtered.map((e) => {
+          const isSel = selected.has(e.path)
+          const isCurrent = e.path === currentPath
+          const disabled = !isSel && (atCap || isCurrent)
+          return (
+            <div
+              key={e.path}
+              className={`${styles.row} ${isSel ? styles.rowSel : ''} ${disabled ? styles.rowDisabled : ''}`}
+              onClick={() => {
+                if (isSel) onRemove(e.path)
+                else if (!disabled) onToggle({ source: 'mine', name: e.name, path: e.path })
+              }}
+              title={isCurrent ? 'this is the current sprite' : e.path}
+            >
+              <span className={styles.check}>{isSel ? '☑' : '☐'}</span>
+              <span className={styles.name}>{e.name}</span>
+              {isCurrent && <span className={styles.dim}>current</span>}
+            </div>
+          )
+        })}
+        {filtered.length === 0 && <div className={styles.dim}>No matches</div>}
       </div>
-
-      {tab === 'vanilla' && vanilla === null ? (
-        <div className={styles.empty}>
-          <p className={styles.dim}>Vanilla sprites folder not set.</p>
-          <button className={styles.setBtn} onClick={onChooseVanilla}>
-            Set vanilla sprites folder
-          </button>
-        </div>
-      ) : (
-        <>
-          <input
-            className={styles.search}
-            placeholder="Search…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <div className={styles.list}>
-            {filtered.map((e) => {
-              const isSel = selected.has(e.path)
-              const isCurrent = e.path === currentPath
-              const disabled = !isSel && (atCap || isCurrent)
-              return (
-                <div
-                  key={e.path}
-                  className={`${styles.row} ${isSel ? styles.rowSel : ''} ${disabled ? styles.rowDisabled : ''}`}
-                  onClick={() => {
-                    if (isSel) onRemove(e.path)
-                    else if (!disabled) onToggle({ source: tab, name: e.name, path: e.path })
-                  }}
-                  title={isCurrent ? 'this is the current sprite' : e.path}
-                >
-                  <span className={styles.check}>{isSel ? '☑' : '☐'}</span>
-                  <span className={styles.name}>{e.name}</span>
-                  {isCurrent && <span className={styles.dim}>current</span>}
-                </div>
-              )
-            })}
-            {filtered.length === 0 && <div className={styles.dim}>No matches</div>}
-          </div>
-        </>
-      )}
     </div>
   )
 }

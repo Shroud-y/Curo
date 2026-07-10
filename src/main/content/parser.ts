@@ -114,6 +114,18 @@ function boolFlag(chain: string, name: string, def: boolean): boolean {
 // `.pos(x, y)` with optional trailing `f` float suffix; defaults to 0,0.
 const POS_RE = /\.pos\(\s*(-?\d*\.?\d+)f?\s*,\s*(-?\d*\.?\d+)f?\s*\)/
 
+// Unit hitSize: builder call `.hitSize(20f)` or field assign `hitSize = 20f`.
+// Mindustry's UnitType.hitSize defaults to 6 world units.
+const HITSIZE_CALL_RE = /\.hitSize\(\s*(-?\d*\.?\d+)f?\s*\)/
+const HITSIZE_ASSIGN_RE = /\bhitSize\s*=\s*(-?\d*\.?\d+)f?/
+const DEFAULT_HIT_SIZE = 6
+
+/** `hitSize` from a unit chain; Mindustry default (6) when absent. */
+function parseHitSize(chain: string): number {
+  const m = HITSIZE_CALL_RE.exec(chain) ?? HITSIZE_ASSIGN_RE.exec(chain)
+  return m ? parseFloat(m[1]) : DEFAULT_HIT_SIZE
+}
+
 // Anchors. Unit vars: `x = UnitBuilder.create("id")`. Block vars:
 // `x = new ClassName("id")` (ClassName must start uppercase to skip `new int[]`
 // and similar). Weapons: create / createAlwaysFire. Region parts: the three
@@ -189,6 +201,7 @@ export function parseContentFile(text: string, file: string): ContentEntity[] {
       name: u[1],
       id: u[2],
       hasCell: !/\.noCell\s*\(/.test(chain),
+      hitSize: parseHitSize(chain),
       weapons: parseWeapons(chain),
       file
     }

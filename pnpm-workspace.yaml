@@ -1,3 +1,5 @@
 allowBuilds:
   electron: true
+  # Squirrel.Windows helper; we build NSIS + portable, its postinstall isn't needed.
+  electron-winstaller: false
   esbuild: true

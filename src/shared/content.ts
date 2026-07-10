@@ -20,6 +20,8 @@ export interface UnitEntity {
   id: string
   /** true unless `.noCell()` appears in the unit's chain. */
   hasCell: boolean
+  /** UnitType.hitSize in world units (square hitbox side). Mindustry default 6. */
+  hitSize: number
   weapons: WeaponDef[]
   /** Source file this entity came from (absolute path). */
   file: string

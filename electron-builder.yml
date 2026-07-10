@@ -1,0 +1,22 @@
+appId: com.curo.app
+productName: Curo
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+win:
+  icon: resources/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-Setup-${version}.${ext}
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}
+# CI creates the GitHub release itself; builder never publishes.
+publish: null

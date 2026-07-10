@@ -62,25 +62,16 @@ export default function App(): JSX.Element {
   const [compMode, setCompMode] = useState<'ingame' | 'component'>('ingame')
   const [compare, setCompare] = useState(false)
   const [refs, setRefs] = useState<RefItem[]>([])
-  const [vanillaGroups, setVanillaGroups] = useState<SpriteNode[] | null>(null)
 
   const selectSprite = useCallback((path: string | null) => {
     setActivePath(path)
     setActiveUnresolved(path === null)
   }, [])
 
-  const loadVanilla = useCallback(async () => {
-    setVanillaGroups(await window.api.readVanillaSprites())
-  }, [])
-
-  // Reference lists (flat name+path) for the compare picker.
+  // Reference list (flat name+path) for the compare picker.
   const mineRefs = useMemo<RefEntry[]>(
     () => flattenLeaves(groups).map((l) => ({ name: l.stem, path: l.path })),
     [groups]
-  )
-  const vanillaRefs = useMemo<RefEntry[] | null>(
-    () => (vanillaGroups ? flattenLeaves(vanillaGroups).map((l) => ({ name: l.stem, path: l.path })) : null),
-    [vanillaGroups]
   )
 
   const toggleRef = useCallback((item: RefItem) => {
@@ -89,10 +80,6 @@ export default function App(): JSX.Element {
   const removeRef = useCallback((path: string) => {
     setRefs((prev) => prev.filter((r) => r.path !== path))
   }, [])
-  const chooseVanilla = useCallback(async () => {
-    setSettings(await window.api.chooseVanilla())
-    await loadVanilla()
-  }, [loadVanilla])
 
   // Render-ready views, rebuilt when the parse result or sprite tree changes.
   const unitViews = useMemo<UnitView[]>(() => {
@@ -127,14 +114,13 @@ export default function App(): JSX.Element {
     if (path) await loadRoot(path)
   }, [loadRoot])
 
-  // Auto-load the last-opened root + settings + vanilla index on launch.
+  // Auto-load the last-opened root + settings on launch.
   useEffect(() => {
     void window.api.getSettings().then(setSettings)
     void window.api.getLastRoot().then((last) => {
       if (last) void loadRoot(last)
     })
-    void loadVanilla()
-  }, [loadRoot, loadVanilla])
+  }, [loadRoot])
 
   // Load the active sprite's bytes + dimensions. reloadNonce forces a re-read
   // when the watcher reports the active file changed on disk.
@@ -399,11 +385,9 @@ export default function App(): JSX.Element {
               <RefPicker
                 currentPath={activePath}
                 mine={mineRefs}
-                vanilla={vanillaRefs}
                 refs={refs}
                 onToggle={toggleRef}
                 onRemove={removeRef}
-                onChooseVanilla={chooseVanilla}
               />
             </div>
           </div>
@@ -421,9 +405,7 @@ export default function App(): JSX.Element {
       {showSettings && (
         <SettingsPanel
           editorPath={settings.editorPath}
-          vanillaPath={settings.vanillaSpritesPath}
           onChooseEditor={chooseEditor}
-          onChooseVanilla={chooseVanilla}
           onClose={() => setShowSettings(false)}
         />
       )}

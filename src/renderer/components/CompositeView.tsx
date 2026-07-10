@@ -4,6 +4,7 @@ import { TEAMS } from '../lib/unitModel'
 import { layoutComposite, type Dims, type LayerFlags } from '../lib/composite'
 import { tintCell } from '../lib/cellTint'
 import { drawMissingMarker } from '../lib/marker'
+import { drawHitbox } from '../lib/hitbox'
 import { PixelViewport } from './PixelViewport'
 import { useSprites } from './useSprites'
 import styles from './CompositeView.module.css'
@@ -37,7 +38,8 @@ export function CompositeView({
     cell: true,
     weapons: true,
     outline: false,
-    showMissing: true
+    showMissing: true,
+    hitbox: false
   })
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -66,6 +68,7 @@ export function CompositeView({
         base: view.base,
         cell: view.cell,
         hasCell: view.unit.hasCell,
+        hitSize: view.unit.hitSize,
         weapons: view.weapons,
         dims,
         scale,
@@ -122,6 +125,12 @@ export function CompositeView({
       }
       ctx.restore()
     }
+
+    // Hitbox overlay above everything.
+    if (layout.hitbox) {
+      const hb = layout.hitbox
+      drawHitbox(ctx, hb.cx, hb.cy, hb.size, hb.hitSize)
+    }
   }, [mode, layout, imgs, compFile, canvasW, canvasH])
 
   const toolbar = (
@@ -168,6 +177,17 @@ export function CompositeView({
               onChange={(e) => setFlags((f) => ({ ...f, showMissing: e.target.checked }))}
             />
             missing
+          </label>
+          <label
+            className={styles.check}
+            title={`Overlay the unit hitbox: hitSize square + physics circle (hitSize ${view.unit.hitSize})`}
+          >
+            <input
+              type="checkbox"
+              checked={flags.hitbox}
+              onChange={(e) => setFlags((f) => ({ ...f, hitbox: e.target.checked }))}
+            />
+            hitbox
           </label>
           <label className={`${styles.check} ${styles.disabled}`} title="Outline generation not implemented yet">
             <input type="checkbox" checked={false} disabled />
