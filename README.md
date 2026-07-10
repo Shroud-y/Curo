@@ -16,7 +16,7 @@ in-game unit/block previews, and one-click hand-off to your pixel editor.
 > **Disclaimer:** Curo was built as a companion tool for developing my own
 > Mindustry mod, so its features follow that mod's workflow and Java content
 > style first. It should work with similar mods, but anything outside that
-> scope is untested - use at your own risk, and feel free to open an issue.
+> scope is untested - feel free to open an issue.
 
 ## Features
 
